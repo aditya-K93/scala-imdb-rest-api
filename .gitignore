@@ -1,0 +1,13 @@
+*.tsv
+*.gz
+.metals/
+.vscode
+*.minimal
+.DS_Store
+.ammonite/
+.bloop
+.idea
+*.metals/
+.bsp
+/project/project/
+*target/
