@@ -21,7 +21,7 @@ object Ratings {
           session
             .prepare(selectById)
             .use { ps =>
-              ps.stream((genreName, limit), chunkSize = 1024).compile.toList
+              ps.stream((genreName.replaceAll("\\s", "") ++ "%", limit), chunkSize = 1024).compile.toList
             }
         }
 
@@ -57,7 +57,7 @@ private object RatingSQL {
           FROM       title_basics
           INNER JOIN title_ratings
           ON         title_ratings.tconst = title_basics.tconst 
-          WHERE      title_basics.genres ILIKE $varchar
+          WHERE      title_basics.genres ILIKE  $varchar
           AND        numvotes >25000 
           AND        titletype = 'movie'
           ORDER BY   averagerating DESC

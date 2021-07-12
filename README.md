@@ -1,8 +1,8 @@
 # IMDB Search Rest Api
 
 - [x] Search movie titles + cast crew
-- [x] Search top rated movies for a genre
-- [ ] Kevin Bacon Number (works only for degree 1 and 0)
+- [x] Search top-rated movies for a genre
+- [ ] Kevin Bacon Number (works up-to degree 3 times out, times out after)
 
 Purely Function Scala app to search movies by title, find top rated movies for a genre and get Bacon Number for an
 actor/actress. Uses [Typelevel](https://typelevel.org/) scala fp ecosystem cats, cats-effect, http4s, circe, skunk and

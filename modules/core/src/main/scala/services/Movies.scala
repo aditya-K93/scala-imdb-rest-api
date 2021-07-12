@@ -50,8 +50,8 @@ private object MovieSQL {
           SELECT title_basics.tconst,titletype, primarytitle, originaltitle, isadult, startyear, endyear, runtimeminutes, genres
           FROM   PUBLIC.title_basics
           WHERE  (
-                        title_basics.primarytitle = $varchar
-                 OR     title_basics.originaltitle = $varchar)
+                        title_basics.primarytitle ILIKE $varchar
+                 OR     title_basics.originaltitle ILIKE $varchar)
           AND    titletype = 'movie'
           LIMIT 1
        """.query(decoder)

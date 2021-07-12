@@ -12,8 +12,8 @@ import domain.baconNumber.BaconNumber
 trait KevinBaconDetails[F[_]] {
   def getAllMoviesByActor(actorId: String): F[Option[Actor]]
   def getActorIdByName(actorName: String): F[Option[String]]
-  def getAllMoviesByActorsExcept(actorIdList: List[String], exceptActorIdList: List[String]): F[List[String]]
-  def getAllActorsByMoviesExcept(movieIdList: List[String], exceptMovieIdList: List[String]): F[List[String]]
+  def getAllMoviesByActorsExcept(actorIdList: List[String], exceptActorIdList: List[String]): F[Option[List[String]]]
+  def getAllActorsByMoviesExcept(movieIdList: List[String], exceptMovieIdList: List[String]): F[Option[List[String]]]
   def degreesOfSeparationKevinBacon(actorName: String): F[BaconNumber]
 }
 
@@ -37,79 +37,92 @@ object KevinBaconDetails {
           }
         }
 
-      def getAllMoviesByActorsExcept(actorIdList: List[String], exceptActorIdList: List[String]): F[List[String]] = {
+      def getAllMoviesByActorsExcept(
+          actorIdListSql: List[String],
+          exceptMovieListSql: List[String]
+      ): F[Option[List[String]]] = {
         // skunk doesn't allow inserting params in  queries like where foo in IN ('a' ,'b') without defining length first
         // s"""nm0000102""", s"""nm0000102""" so string interpolation workaround
 
-        val query = selectByActorIdsExcept(
-          actorIdList.map(x => s"""'$x'""").mkString(","),
+        val query = selectMoviesExcept(
+          actorIdListSql.map(x => s"""'$x'""").mkString(","),
+          exceptMovieListSql.map(x => s"""'$x'""").mkString(",")
+        )
+        postgres.use { session =>
+          session
+            .prepare(query)
+            .use { ps =>
+              ps.option(Void)
+            }
+        }
+      }
+
+      def getAllActorsByMoviesExcept(
+          movieIdList: List[String],
+          exceptActorIdList: List[String]
+      ): F[Option[List[String]]] = {
+        val query = selectActorsExcept(
+          movieIdList.map(x => s"""'$x'""").mkString(","),
           exceptActorIdList.map(x => s"""'$x'""").mkString(",")
         )
         postgres.use { session =>
           session
             .prepare(query)
             .use { ps =>
-              ps.stream(Void, chunkSize = 1024).compile.toList
-            }
-        }
-      }
-
-      def getAllActorsByMoviesExcept(movieIdList: List[String], exceptMovieIdList: List[String]): F[List[String]] = {
-        val query = selectByMovieIdsExcept(
-          movieIdList.map(x => s"""'$x'""").mkString(","),
-          exceptMovieIdList.map(x => s"""'$x'""").mkString(",")
-        )
-        postgres.use { session =>
-          session
-            .prepare(query)
-            .use { ps =>
-              ps.stream(Void, chunkSize = 1024).compile.toList
+              ps.option(Void)
             }
         }
       }
 
       def degreesOfSeparationKevinBacon(actorName: String): F[BaconNumber] = {
         for {
-          actorId    <- getActorIdByName(actorName)
-          kevinBacon <- getAllMoviesByActor("nm0000102") // mah man bacon himself
-          givenActor <- getAllMoviesByActor(actorId.getOrElse(""))
-
-          isDegreeFound <- Monad[F].pure(
-            actedInSameMovie(
-              kevinBacon.getOrElse(Actor("", "", List.empty)),
-              givenActor.fold(List.empty[String])(_.movieIdList)
-            )
+          actorId     <- getActorIdByName(actorName)
+          searchActor <- getAllMoviesByActor(actorId.getOrElse(""))
+          all_actors <- getAllActorsByMoviesExcept(
+            searchActor.fold(List(""))(_.movieIdList),
+            searchActor.fold(List(""))(x => List(x.actorId))
           )
-//        need to fix type errors to let IO monad tailRecM without blowing stack ona WithDegreeMoreThanOne() call
-//        works only for degree 1 or not found
-//          isDegreeFound <- actedWithDegreeMoreThanOne(
-//            List(actorId.getOrElse("")),
-//            givenActor.fold(List.empty[String])(_.movieIdList),
-//            kevinBacon,
-//            1
-//          )
+          kevinBacon <- getAllMoviesByActor("nm0000102") // man bacon himself
+          degreeSeparation <- if (searchActor.isEmpty) Monad[F].pure(BaconNumber(-1))
+          else if (searchActor.fold("")(x => x.actorId) == kevinBacon.fold("")(x => x.actorId))
+            Monad[F].pure(BaconNumber(0))
+          else if (all_actors.getOrElse(List.empty).contains(kevinBacon.fold("")(x => x.actorId)))
+            Monad[F].pure(BaconNumber(1))
+          else
+            actedWithDegreeMoreThanOne(
+              all_actors.getOrElse(List("")),
+              searchActor.fold(List(""))(_.movieIdList),
+              all_actors.getOrElse(List("")),
+              kevinBacon.fold("")(x => x.actorId),
+              2
+            )
 
-        } yield BaconNumber(isDegreeFound.compareTo(false))
+        } yield degreeSeparation
 
-      }
-
-      def actedInSameMovie(kevinBacon: Actor, givenActors: List[String]): Boolean = {
-        if (kevinBacon.movieIdList.intersect(givenActors).nonEmpty) true else false
       }
 
       def actedWithDegreeMoreThanOne(
-          alreadySeenActor: List[String],
-          moviesByActorsToEvaluate: List[String],
-          kevinBacon: Option[Actor],
-          degreeCount: Int = 1
-      ): F[Int] = {
+          second_degree_or_higher_actors: List[String],
+          filter_movies: List[String],
+          filterActors: List[String],
+          baconActorId: String,
+          count: Int
+      ): F[BaconNumber] = {
         for {
-          actors         <- getAllActorsByMoviesExcept(moviesByActorsToEvaluate, alreadySeenActor)
-          movies         <- getAllMoviesByActorsExcept(actors, alreadySeenActor)
-          didActTogether <- Monad[F].pure(actedInSameMovie(kevinBacon.getOrElse(Actor("", "", List.empty)), movies))
+          movies <- getAllMoviesByActorsExcept(second_degree_or_higher_actors, filter_movies)
+          actors <- getAllActorsByMoviesExcept(movies.getOrElse(List("")), filterActors)
+          didActTogether <- if (actors.getOrElse(List.empty).contains(baconActorId)) Monad[F].pure(BaconNumber(count))
+          else if (count > 6) Monad[F].pure(BaconNumber(-1))
+          else
+            actedWithDegreeMoreThanOne(
+              actors.getOrElse(List("")),
+              filter_movies ++ movies.getOrElse(List("")),
+              filterActors ++ actors.getOrElse(List("")),
+              baconActorId,
+              count + 1
+            )
 
-//          if (didActTogether) tailrecM(degreeCount+1) else degreeCount
-        } yield didActTogether.compareTo(false)
+        } yield didActTogether
       }
     }
 
@@ -122,8 +135,11 @@ private object ActorMovieSQL {
       .map { case an ~ ai ~ mi => Actor(an, ai, mi.toString.split(",").toList) }
 
   val MovieListDecoder: skunk.Decoder[List[String]] = {
-    println("As")
     (varchar(10)).map(m => m.toString.split(",").toList)
+  }
+
+  val textDecoder: skunk.Decoder[List[String]] = {
+    (text.opt).map(m => m.toString.split(",").toList)
   }
 
   val selectAllMoviesByActorId: Query[String, Actor] =
@@ -137,7 +153,7 @@ private object ActorMovieSQL {
                  INNER JOIN title_basics
                          ON title_basics.tconst = s.tconst
           WHERE  g.nconst = $varchar
-                 AND title_basics.titletype = 'movie'
+                 AND title_basics.titletype =   'movie'   
           GROUP   BY g.nconst  
        """.query(decoder)
 
@@ -150,31 +166,26 @@ private object ActorMovieSQL {
           AND    birthyear notnull LIMIT 1        
       """.query(varchar(10))
 
-  def selectByActorIdsExcept(actorIdListSql: String, actorIdExceptListSql: String): Query[Void, String] = {
+  def selectActorsExcept(movieIdListSql: String, exceptActorListSql: String): Query[Void, List[String]] = {
     sql"""
-
-          SELECT String_agg(movieid, ',')
-          FROM   (SELECT title_basics.tconst AS movieId
-                  FROM   title_principals
-                         INNER JOIN title_basics
-                                 ON title_basics.tconst = title_principals.tconst
-                  WHERE  title_principals.nconst IN  ( #$actorIdListSql )
-                         AND title_principals.nconst NOT IN  ( #$actorIdExceptListSql )  ) AS SUBQUERY
-          GROUP  BY movieid
-        """.query(text)
+         SELECT DISTINCT String_agg(actorid, ',')
+                FROM   (SELECT title_principals.nconst AS actorId
+                    FROM   title_principals
+                    WHERE  title_principals.tconst IN ( #$movieIdListSql )
+                         AND title_principals.nconst NOT IN ( #$exceptActorListSql  ) 
+                         AND  category = 'actor' ) AS SUBQUERY	 
+        """.query(textDecoder)
   }
 
-  def selectByMovieIdsExcept(movieIdListSql: String, movieIdExceptListSql: String): Query[Void, String] = {
+  def selectMoviesExcept(actorIdListSql: String, exceptMovieListSql: String): Query[Void, List[String]] = {
     sql"""
-        SELECT String_agg(actorid, ',')
-        FROM   (SELECT title_principals.nconst AS actorId
-                FROM   title_principals
-                       INNER JOIN title_basics
-                               ON title_basics.tconst = title_principals.tconst
-                WHERE  title_principals.tconst IN ( #$movieIdListSql )
-                       AND title_principals.tconst NOT IN ( #$movieIdExceptListSql )) AS SUBQUERY
-        GROUP  BY actorid  
-        """.query(text)
+          SELECT String_agg(movieid, ',')
+          FROM   (SELECT  DISTINCT title_principals.tconst AS movieId
+            FROM   title_principals
+            WHERE  title_principals.nconst IN  ( #$actorIdListSql )
+             AND title_principals.tconst NOT IN  ( #$exceptMovieListSql ) 
+             AND  category = 'actor'  ) AS SUBQUERY
+          """.query(textDecoder)
   }
 
 }
