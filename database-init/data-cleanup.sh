@@ -26,7 +26,7 @@ MINIMAL_DATASET=false
 
 function get_help() {
     cat << "EOF"
-Lunatech IMDb Assessment Data CleanUp
+ IMDb Assessment Data CleanUp
 Usage: data-cleanup.sh [OPTION]...
 
     -h,   --help                Prints this message
