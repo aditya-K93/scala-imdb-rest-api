@@ -28,7 +28,7 @@ Build And Run
 
 ```
 [info] running Main 
-01:50:30.818 [io-compute-3] INFO  Main - Loaded config AppConfig(PostgreSQLConfig(localhost,5432,postgres,Secret(afc848c),lunatech_imdb,10),HttpServerConfig(0.0.0.0,8080))
+01:50:30.818 [io-compute-3] INFO  Main - Loaded config AppConfig(PostgreSQLConfig(localhost,5432,postgres,Secret(afc848c),imdb,10),HttpServerConfig(0.0.0.0,8080))
 01:50:31.346 [io-compute-11] INFO  Main - Connected to Postgres PostgreSQL 13.3 (Debian 13.3-1.pgdg100+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 8.3.0-6) 8.3.0, 64-bit
 01:50:31.927 [io-compute-2] INFO  o.h.ember.server.EmberServerBuilder - Ember-Server service bound to address: /0:0:0:0:0:0:0:0:8080
 01:50:31.929 [io-compute-2] INFO  Main - 
