@@ -5,14 +5,8 @@ NC='\033[0m'     # No Color
 
 S3_URL="https://lunatechassessments.s3-eu-west-1.amazonaws.com/imdb-docker"
 
-# To change this banner, go to http://patorjk.com/software/taag/#p=display&f=Big&t=Lunatech%0AIMDb%0AAssessment
 cat << "EOF"
-  _                       _            _                  
- | |                     | |          | |                 
- | |    _   _ _ __   __ _| |_ ___  ___| |__               
- | |   | | | | '_ \ / _` | __/ _ \/ __| '_ \              
- | |___| |_| | | | | (_| | ||  __/ (__| | | |             
- |______\__,_|_|_|_|\__,_|\__\___|\___|_| |_|             
+        
  |_   _|  \/  |  __ \| |                                  
    | | | \  / | |  | | |__                                
    | | | |\/| | |  | | '_ \                               
@@ -48,22 +42,22 @@ for file in "${FILES[@]}"; do
 done
 
 echo -e "${Bold}Initializing Schema...${NC}"
-psql --host=postgres --username=postgres -d lunatech_imdb -f ./schema.sql
+psql --host=postgres --username=postgres -d imdb -f ./schema.sql
 
 echo -e "${Bold}Loading Name Basics...${NC}"
-psql --host=postgres --username=postgres -d lunatech_imdb -c "\copy name_basics(nconst,primaryname,birthyear,deathyear,primaryprofession,knownfortitles) FROM 'name.basics.tsv' DELIMITER E'\t' NULL '\N' CSV HEADER"
+psql --host=postgres --username=postgres -d imdb -c "\copy name_basics(nconst,primaryname,birthyear,deathyear,primaryprofession,knownfortitles) FROM 'name.basics.tsv' DELIMITER E'\t' NULL '\N' CSV HEADER"
 
 echo -e "${Bold}Loading Title Basics...${NC}"
-psql --host=postgres --username=postgres -d lunatech_imdb -c "\copy title_basics(tconst, titleType,primaryTitle,originalTitle,isAdult,startYear,endYear,runtimeMinutes,genres) FROM 'title.basics.tsv' DELIMITER E'\t' NULL '\N' CSV HEADER"
+psql --host=postgres --username=postgres -d imdb -c "\copy title_basics(tconst, titleType,primaryTitle,originalTitle,isAdult,startYear,endYear,runtimeMinutes,genres) FROM 'title.basics.tsv' DELIMITER E'\t' NULL '\N' CSV HEADER"
 
 echo -e "${Bold}Loading Title Ratings...${NC}"
-psql --host=postgres --username=postgres -d lunatech_imdb -c "\copy title_ratings(tconst, averageRating, numVotes) FROM 'title.ratings.tsv' DELIMITER E'\t' NULL '\N' CSV HEADER"
+psql --host=postgres --username=postgres -d imdb -c "\copy title_ratings(tconst, averageRating, numVotes) FROM 'title.ratings.tsv' DELIMITER E'\t' NULL '\N' CSV HEADER"
 
 echo -e "${Bold}Loading Title Crew...${NC}"
-psql --host=postgres --username=postgres -d lunatech_imdb -c "\copy title_crew(tconst, directors, writers) FROM 'title.crew.tsv' DELIMITER E'\t' NULL '\N' CSV HEADER"
+psql --host=postgres --username=postgres -d imdb -c "\copy title_crew(tconst, directors, writers) FROM 'title.crew.tsv' DELIMITER E'\t' NULL '\N' CSV HEADER"
 
 echo -e "${Bold}Loading Title Principals...${NC}"
-psql --host=postgres --username=postgres -d lunatech_imdb -c "\copy title_principals(tconst, ordering, nconst, category, job, characters) FROM 'title.principals.tsv' DELIMITER E'\t' NULL '\N' CSV HEADER"
+psql --host=postgres --username=postgres -d imdb -c "\copy title_principals(tconst, ordering, nconst, category, job, characters) FROM 'title.principals.tsv' DELIMITER E'\t' NULL '\N' CSV HEADER"
 
 # To change this banner, go to http://patorjk.com/software/taag/#p=display&f=Big&t=DB%20ready%20to%20use!
 cat << "EOF"
@@ -81,20 +75,20 @@ echo -e "${Bold}Summary:${NC}"
 
 echo -e "  ${Bold}Name basics:${NC}"
 echo "  Input: $(wc -l name.basics.tsv | awk '{print $1}')"
-echo "  Rows: $(psql --host=postgres --username=postgres -d lunatech_imdb -c 'select count(*) from name_basics' | head -3 | tail -1)"
+echo "  Rows: $(psql --host=postgres --username=postgres -d imdb -c 'select count(*) from name_basics' | head -3 | tail -1)"
 
 echo -e "  ${Bold}Title basics:${NC}"
 echo "  Input: $(wc -l title.basics.tsv | awk '{print $1}')"
-echo "  Rows: $(psql --host=postgres --username=postgres -d lunatech_imdb -c 'select count(*) from title_basics' | head -3 | tail -1)"
+echo "  Rows: $(psql --host=postgres --username=postgres -d imdb -c 'select count(*) from title_basics' | head -3 | tail -1)"
 
 echo -e "  ${Bold}Title ratings:${NC}"
 echo "  Input: $(wc -l title.ratings.tsv | awk '{print $1}')"
-echo "  Rows: $(psql --host=postgres --username=postgres -d lunatech_imdb -c 'select count(*) from title_ratings' | head -3 | tail -1)"
+echo "  Rows: $(psql --host=postgres --username=postgres -d imdb -c 'select count(*) from title_ratings' | head -3 | tail -1)"
 
 echo -e "  ${Bold}Title crew:${NC}"
 echo "  Input: $(wc -l title.crew.tsv | awk '{print $1}')"
-echo "  Rows: $(psql --host=postgres --username=postgres -d lunatech_imdb -c 'select count(*) from title_crew' | head -3 | tail -1)"
+echo "  Rows: $(psql --host=postgres --username=postgres -d imdb -c 'select count(*) from title_crew' | head -3 | tail -1)"
 
 echo -e "  ${Bold}Title principals:${NC}"
 echo "  Input: $(wc -l title.principals.tsv | awk '{print $1}')"
-echo "  Rows: $(psql --host=postgres --username=postgres -d lunatech_imdb -c 'select count(*) from title_principals' | head -3 | tail -1)"
+echo "  Rows: $(psql --host=postgres --username=postgres -d imdb -c 'select count(*) from title_principals' | head -3 | tail -1)"
