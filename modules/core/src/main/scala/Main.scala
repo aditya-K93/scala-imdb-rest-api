@@ -1,35 +1,143 @@
-import config.Config
-import resources._
-import cats.effect._
-import cats.effect.std.Supervisor
-import eu.timepit.refined.auto._
-import modules.{ HttpApi, Services }
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
-
-object Main extends IOApp.Simple {
-
-  implicit val logger = Slf4jLogger.getLogger[IO]
-
-  override def run: IO[Unit] =
-    Config.load[IO].flatMap { cfg =>
-      Logger[IO].info(s"Loaded config $cfg") >>
-        Supervisor[IO]
-          .use { implicit sp =>
-            AppResources
-              .make[IO](cfg)
-              .evalMap { res =>
-                IO {
-                  val services = Services.make[IO](res.postgres)
-                  val api      = HttpApi.make[IO](services)
-                  cfg.httpServerConfig -> api.httpApp
-                }
-              }
-              .flatMap {
-                case (cfg, httpApp) =>
-                  MkHttpServer[IO].newEmber(cfg, httpApp)
-              }
-              .useForever
-          }
-    }
-}
+//import cats.effect.{ Concurrent, Resource, _ }
+//import domain.movieDetail.MovieDetail
+//import io.circe.{ Json, JsonObject }
+//import org.http4s.EntityDecoder
+//import services.{ ActorDetails, CastAndCrew, Movies, Ratings }
+////import io.circe.Encoder, io.circe.Decoder
+//import skunk._
+//import skunk.implicits._
+//import skunk.codec.all._
+//import natchez.Trace.Implicits.noop
+//import io.circe.generic.auto._, io.circe.syntax._
+//import org.http4s.circe._
+//
+//import services.Movies._
+//object Main extends IOApp {
+//
+//  val session: Resource[IO, Session[IO]] =
+//    Session.single( // (2)
+//      host = "localhost",
+//      port = 5432,
+//      user = "postgres",
+//      database = "lunatech_imdb",
+//      password = Some("postgres")
+//    )
+//
+//  case class Crew(role: Option[String], people: List[String])
+//
+//  case class Movie(
+//      movieId: String,
+//      titleType: String,
+//      primaryTitle: String,
+//      OriginalTitle: String,
+//      ratedAdult: Boolean,
+//      yearReleased: Option[Int],
+//      yearEnded: Option[Int],
+//      runtimeInMinutes: Option[Int],
+//      genres: String
+//  )
+//
+////  )
+//
+//  val movie: skunk.Decoder[Movie] =
+//    (varchar(10) ~ varchar(20) ~ varchar(500) ~ varchar(500) ~ bool ~ int4.opt ~ int4.opt ~ int4.opt ~ varchar(200))
+//      .gmap[Movie]
+//
+//  val getMovieByTitleId: Query[String ~ String, Movie] =
+//    sql"""
+//          SELECT *  FROM public.title_basics
+//          WHERE (title_basics.primarytitle ILIKE $varchar OR  title_basics.originaltitle ILIKE $varchar) AND titletype = 'movie'
+//          """
+//      .query(movie)
+//
+//  def doMovie(s: Session[IO]): IO[List[Movie]] =
+//    s.prepare(getMovieByTitleId).use { ps =>
+//      ps.stream(("%Dark Knight", "%Dark Knight"), 32).compile.toList
+//    }
+//
+//  val getCrewByTitleId: Query[String, Crew] =
+//    sql"""
+//          SELECT tp.category,
+//                 String_agg(nb.primaryname, ',') AS actors
+//          FROM   name_basics AS nb
+//                 JOIN title_principals AS tp
+//                   ON nb.nconst = tp.nconst
+//          WHERE  tp.tconst = $varchar
+//          GROUP  BY tp.category
+//       """
+//      .query(varchar(100) ~ text)
+//      .map { case n ~ p => Crew(Option(n), p.toString.split(",").toList) }
+//
+//  def doExtended(s: Session[IO]): IO[List[Crew]] =
+//    s.prepare(getCrewByTitleId).use { ps =>
+//      ps.stream("tt0468569", 32).compile.toList
+//    }
+//
+//  def run(args: List[String]): IO[ExitCode] =
+//    session.use { s => // (3)
+//      for {
+//        d  <- s.unique(sql"select current_date".query(date)) // (4)
+//        z  <- doExtended(s)
+//        zz <- doMovie(s)
+////        p  <- IO.pure(z.headOption.fold(List.empty[String])(_.members))
+////        m  <- IO.pure(zz.headOption.fold({}.asJson)(_.asJson))
+//
+//        crew  <- IO.pure(z.asJson)
+//        movie <- IO.pure(zz.asJson)
+//        mm <- Movies
+//          .make[IO](session)
+//          .findByTitle("The Dark Knight", "The Dark Knight")
+//
+//        xxx <- Ratings
+//          .make[IO](session)
+//          .findByGenre("drama")(1)
+//
+//        xxxy <- IO.pure(xxx.asJson)
+//
+//        ll <- CastAndCrew
+//          .make[IO](session)
+//          .findByTitleId(mm.fold("")(_.movieId))
+//        llm <- IO.pure(ll.asJson)
+//
+//        mmm <- IO.pure(mm.asJson)
+//        pp <- Movies
+//          .make[IO](session)
+//          .findByTitleId("tt0468569")
+//        mmn <- IO.pure(pp.asJson)
+//
+//        yolo <- ActorDetails
+//          .make[IO](session)
+//          .getAllMoviesByActor("nm0000102")
+//        act <- ActorDetails
+//          .make[IO](session)
+//          .getActorIdByName("Kevin Bacon")
+//        movAll <- ActorDetails
+//          .make[IO](session)
+//          .getAllMoviesByActorsExcept(List("nm0000102"), List("random"))
+//
+//        actorAll <- ActorDetails
+//          .make[IO](session)
+//          .getAllActorsByMoviesExcept(List("tt11295262", "tt1735313"), List("tt11295262"))
+//
+//        actorAll <- ActorDetails
+//          .make[IO](session)
+//          .degreesOfSeparationKevinBacon("Brad Pitt")
+//
+//        yolopure   <- IO.pure(act.asJson)
+//        movAllpure <- IO.pure(movAll.asJson)
+//
+//        details <- IO.pure(MovieDetail(mm, ll).asJson)
+////        _       <- IO.println(s"The current date is $d.")
+////        _       <- IO.println(s"The Crew result is a $z")
+////        _       <- IO.println(s"The Movie re sult is a $zz")
+////        _       <- IO.println(s" Crew $crew")
+////        _       <- IO.println(s" Movie $mmn")
+////        _       <- IO.println(s" Movie $mmm")
+////        _       <- IO.println(s" rating $xxxy")
+////        _       <- IO.println(s" actorid $yolopure")
+//        _ <- IO.println(s" allMovies $movAll")
+//        _ <- IO.println(s" allActors $actorAll")
+//      } yield ExitCode.Success
+//    }
+//
+//}
