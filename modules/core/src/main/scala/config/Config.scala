@@ -40,7 +40,7 @@ object Config {
           port = postgresHostPortUri.port,
           user = "postgres",
           password = postgresPassword,
-          database = "lunatech_imdb",
+          database = "imdb",
           max = 10
         ),
         HttpServerConfig(
