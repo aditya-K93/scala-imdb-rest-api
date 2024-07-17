@@ -19,7 +19,7 @@
 //      host = "localhost",
 //      port = 5432,
 //      user = "postgres",
-//      database = "lunatech_imdb",
+//      database = "imdb",
 //      password = Some("postgres")
 //    )
 //

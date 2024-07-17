@@ -1,8 +1,6 @@
-version: '2.1'
-
 services:
   postgres:
-    image: postgres:13
+    image: arm64v8/postgres
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -20,7 +18,7 @@ services:
       driver: none
 
   postgres-init:
-    image: postgres:13
+    image: arm64v8/postgres
     depends_on:
       postgres:
         condition: service_healthy

@@ -13,8 +13,8 @@ final case class KevinBaconRoutes[F[_]: Monad](
 ) extends Http4sDsl[F] {
 
   private val httpRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
-    case GET -> Root / titleName =>
-      Ok(actorDetails.degreesOfSeparationKevinBacon(titleName))
+    case GET -> Root / actorName =>
+      Ok(actorDetails.degreesOfSeparationKevinBacon(actorName))
 
   }
   val prefixPath = "/kevinBaconNumber"
