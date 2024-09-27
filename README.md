@@ -1,4 +1,4 @@
-# IMDB Search Rest Api
+# IMDB Search Rest API
 
 - [x] Search movie titles + cast crew
 - [x] Search top-rated movies for a genre
