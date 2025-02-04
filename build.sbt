@@ -1,6 +1,6 @@
 import Dependencies.{ Libraries, _ }
 
-ThisBuild / scalaVersion := "2.13.12"
+ThisBuild / scalaVersion := "2.13.13"
 ThisBuild / version := "0.0.1"
 
 ThisBuild / evictionErrorLevel := Level.Warn
