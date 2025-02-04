@@ -2,9 +2,10 @@ import Dependencies.{ Libraries, _ }
 
 ThisBuild / scalaVersion := "2.13.13"
 ThisBuild / version := "0.0.1"
-
 ThisBuild / evictionErrorLevel := Level.Warn
 ThisBuild / scalafixDependencies += Libraries.organizeImports
+ThisBuild / githubWorkflowJavaVersions += JavaSpec.temurin("17")
+ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
