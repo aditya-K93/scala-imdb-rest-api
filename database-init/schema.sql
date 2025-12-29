@@ -89,5 +89,21 @@ CREATE TABLE IF NOT EXISTS title_crew (
 );
 
 CREATE index "title_basics_title_id_index" on public."title_basics"("tconst");
-CREATE index "title_principals_title_id_index" on public."title_principals"("tconst")
+CREATE index "title_principals_title_id_index" on public."title_principals"("tconst");
 CREATE index "title_principals_actor_id_index" on public."title_principals"("nconst");
+
+-- Speed up actor->titles traversal and joins.
+CREATE INDEX IF NOT EXISTS "title_principals_nconst_tconst_index" ON public."title_principals"("nconst", "tconst");
+
+-- Even better for this app's graph search: partial indexes for just actor/actress rows.
+CREATE INDEX IF NOT EXISTS "title_principals_actor_actress_nconst_tconst_idx"
+    ON public."title_principals"("nconst", "tconst")
+    WHERE category IN ('actor', 'actress');
+
+CREATE INDEX IF NOT EXISTS "title_principals_actor_actress_tconst_nconst_idx"
+    ON public."title_principals"("tconst", "nconst")
+    WHERE category IN ('actor', 'actress');
+
+-- Speed up exact-name lookups used by the API.
+-- Note: columns were created unquoted, so PostgreSQL stores them lowercased (primaryname).
+CREATE INDEX IF NOT EXISTS "name_basics_primaryname_index" ON public."name_basics"("primaryname");

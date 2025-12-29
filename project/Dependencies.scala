@@ -3,20 +3,23 @@ import sbt._
 object Dependencies {
 
   object V {
-    val cats             = "2.6.1"
-    val catsEffect       = "3.1.1"
-    val circe            = "0.14.1"
-    val ciris            = "2.0.1"
-    val fs2              = "3.0.6"
+    val cats             = "2.12.0"
+    val catsEffect       = "3.6.3"
+    val circe            = "0.14.12"
+    val ciris            = "3.6.0"
+    val fs2              = "3.12.2"
     val http4s           = "1.0.0-M23"
-    val log4cats         = "2.1.1"
+    val log4cats         = "2.7.0"
     val newtype          = "0.4.4"
-    val refined          = "0.9.26"
-    val skunk            = "0.2.0"
-    val betterMonadicFor = "0.3.1"
-    val kindProjector    = "0.13.3"
-    val logback          = "1.2.3"
-    val organizeImports  = "0.5.0"
+    val refined          = "0.11.2"
+    val skunk            = "0.6.4"
+    val logback          = "1.5.19"
+    val organizeImports  = "0.6.0"
+    val munit            = "1.0.3"
+    val munitScalacheck  = "1.2.0"
+    val scalacheck       = "1.19.0"
+    val scalacheckEffect = "1.0.4"
+    val munitCatsEffect  = "2.0.0"
 
   }
 
@@ -32,7 +35,6 @@ object Dependencies {
     val circeCore    = circe("core")
     val circeGeneric = circe("generic")
     val circeParser  = circe("parser")
-    val circeRefined = circe("refined")
 
     val cirisCore    = ciris("ciris")
     val cirisEnum    = ciris("ciris-enumeratum")
@@ -55,18 +57,15 @@ object Dependencies {
     // Runtime
     val logback = "ch.qos.logback" % "logback-classic" % V.logback
 
+    // Testing
+    val munit            = "org.scalameta"  %% "munit"             % V.munit            % Test
+    val munitScalacheck  = "org.scalameta"  %% "munit-scalacheck"  % V.munitScalacheck  % Test
+    val scalacheck       = "org.scalacheck" %% "scalacheck"        % V.scalacheck       % Test
+    val scalacheckEffect = "org.typelevel"  %% "scalacheck-effect" % V.scalacheckEffect % Test
+    val munitCatsEffect  = "org.typelevel"  %% "munit-cats-effect" % V.munitCatsEffect  % Test
+
     // Scalafix rules
     val organizeImports = "com.github.liancheng" %% "organize-imports" % V.organizeImports
-  }
-
-  object CompilerPlugin {
-    val betterMonadicFor = compilerPlugin(
-      "com.olegpy" %% "better-monadic-for" % V.betterMonadicFor
-    )
-    val kindProjector = compilerPlugin(
-      "org.typelevel" % "kind-projector" % V.kindProjector cross CrossVersion.full
-    )
-
   }
 
 }

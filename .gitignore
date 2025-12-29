@@ -11,3 +11,4 @@
 .bsp
 /project/project/
 *target/
+.env

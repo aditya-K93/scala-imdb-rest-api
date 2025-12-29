@@ -2,8 +2,7 @@ package domain
 
 import domain.movie.Movie
 
-object rating {
+object rating:
 
   //  describe movie with rating schema
   case class Rating(movie: Movie, averageRating: Double, numOfVotes: Int)
-}
