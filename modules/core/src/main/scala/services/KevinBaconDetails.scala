@@ -63,7 +63,7 @@ object KevinBaconDetails:
           val currentMinB = frontierB.iterator.map(visitedB).minOption.getOrElse(0)
 
           // If even the shallowest possible meeting is beyond maxDepth, stop.
-          if currentMinA + currentMinB >= maxDepth then Monad[F].pure(None)
+          if currentMinA + currentMinB > maxDepth then Monad[F].pure(None)
           else
             val expandA = frontierA.size <= frontierB.size
             if expandA then
