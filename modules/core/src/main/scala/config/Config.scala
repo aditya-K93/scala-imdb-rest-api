@@ -9,7 +9,6 @@ import config.types.*
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.cats.*
 import eu.timepit.refined.refineV
-import eu.timepit.refined.types.numeric.PosInt
 import eu.timepit.refined.types.string.NonEmptyString
 
 object Config:

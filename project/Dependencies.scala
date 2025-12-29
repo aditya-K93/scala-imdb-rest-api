@@ -3,23 +3,23 @@ import sbt._
 object Dependencies {
 
   object V {
-    val cats             = "2.12.0"
-    val catsEffect       = "3.6.3"
-    val circe            = "0.14.12"
-    val ciris            = "3.6.0"
-    val fs2              = "3.12.2"
-    val http4s           = "1.0.0-M23"
-    val log4cats         = "2.7.0"
-    val newtype          = "0.4.4"
-    val refined          = "0.11.2"
-    val skunk            = "0.6.4"
-    val logback          = "1.5.19"
-    val organizeImports  = "0.6.0"
-    val munit            = "1.0.3"
-    val munitScalacheck  = "1.2.0"
-    val scalacheck       = "1.19.0"
-    val scalacheckEffect = "1.0.4"
-    val munitCatsEffect  = "2.0.0"
+    val cats              = "2.12.0"
+    val catsEffect        = "3.6.3"
+    val circe             = "0.14.12"
+    val ciris             = "3.6.0"
+    val fs2               = "3.12.2"
+    val http4s            = "1.0.0-M23"
+    val log4cats          = "2.7.0"
+    val newtype           = "0.4.4"
+    val refined           = "0.11.2"
+    val skunk             = "0.6.4"
+    val logback           = "1.5.19"
+    val typelevelScalafix = "0.5.0"
+    val munit             = "1.0.3"
+    val munitScalacheck   = "1.2.0"
+    val scalacheck        = "1.19.0"
+    val scalacheckEffect  = "1.0.4"
+    val munitCatsEffect   = "2.0.0"
 
   }
 
@@ -65,7 +65,7 @@ object Dependencies {
     val munitCatsEffect  = "org.typelevel"  %% "munit-cats-effect" % V.munitCatsEffect  % Test
 
     // Scalafix rules
-    val organizeImports = "com.github.liancheng" %% "organize-imports" % V.organizeImports
+    val typelevelScalafix = "org.typelevel" %% "typelevel-scalafix" % V.typelevelScalafix
   }
 
 }

@@ -2,5 +2,5 @@
 addSbtPlugin("io.spray"       % "sbt-revolver"        % "0.9.1")
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.16")
 addSbtPlugin("org.scalameta"  % "sbt-scalafmt"        % "2.5.6")
-addSbtPlugin("ch.epfl.scala"  % "sbt-scalafix"        % "0.9.29")
+addSbtPlugin("ch.epfl.scala"  % "sbt-scalafix"        % "0.14.5")
 addSbtPlugin("com.github.sbt" % "sbt-github-actions"  % "0.29.0")

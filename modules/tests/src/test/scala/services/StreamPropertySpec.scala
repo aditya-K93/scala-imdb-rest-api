@@ -6,7 +6,6 @@ import domain.movie.Movie
 import domain.rating.Rating
 import fs2.Stream
 import munit.{ CatsEffectSuite, ScalaCheckSuite }
-import org.scalacheck.Prop.*
 import org.scalacheck.effect.PropF
 import org.scalacheck.{ Arbitrary, Gen }
 
