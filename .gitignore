@@ -12,3 +12,7 @@
 /project/project/
 *target/
 .env
+
+# Local bind-mount persistence (created by docker-compose.yaml)
+.postgres-data/
+.imdb-cache/

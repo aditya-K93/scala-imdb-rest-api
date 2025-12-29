@@ -8,10 +8,123 @@ Purely Function Scala app to search movies by title, find top rated movies for a
 actor/actress. Uses [Typelevel](https://typelevel.org/) scala fp ecosystem cats, cats-effect, http4s, circe, skunk and
 scala 3 with Tagless-Final encoding.
 
-Setup
+## Setup
 
-- `docker-compose up` To start container to download imdb data and start postgres container on port 5432
+### Prerequisites
 
+- [Docker](https://www.docker.com/get-started/) (with Docker Compose v2)
+- [SBT](https://www.scala-sbt.org/download.html) (for building/running the app)
+- (optional) [Make](https://www.gnu.org/software/make/) (for Makefile commands)
+- Java 21+ JDK (e.g. [Adoptium Temurin](https://adoptium.net/))
+
+### Getting Started
+
+- `make docker-up` (starts Postgres)
+- `make run` (starts the API server 8080 on localhost)
+- `curl -s "http://127.0.0.1:8080/v1/kevinBaconNumber/Jon%20Hamm?maxPaths=2"` (to test the API)
+
+## Development
+
+### Postgres + IMDb Data Loader
+
+This project uses a Postgres container(`arm64v8/postgres:18.1-alpine`.) plus a one-shot IMDb loader
+
+### Start Postgres (normal dev)
+
+- `docker compose up -d` starts **only Postgres** on port 5432 (fast; no loader runs).
+
+Or using the Makefile:
+
+- `make docker-up`
+
+### First-time database initialization (run once)
+
+Run the loader explicitly via the `init` profile:
+
+- `docker compose --profile init up -d --build postgres-init`
+
+Or:
+
+- `make db-init`
+
+The loader writes a sentinel file into the downloads volume, so future init runs will immediately exit.
+
+### Incremental updates (on demand)
+
+To refresh the dataset later, run the `update` profile:
+
+- `docker compose --profile update up -d --build postgres-update`
+
+Or:
+
+- `make db-update`
+
+The update job caches downloads and only imports when the downloaded `.gz` content changed.
+
+### Persistence
+
+- `docker compose down` stops containers but **keeps** the Postgres data + download cache.
+- `docker compose down -v` deletes volumes (full reset).
+
+Makefile equivalents:
+
+- `make docker-down`
+- `make docker-reset`
+
+> Note: profiles require Docker Compose v2 (`docker compose ...`). If you only have the legacy `docker-compose` command, install/enable Compose v2.
+
+### Common SBT commands
+
+The repo includes a `Makefile` with common build targets:
+
+- `make compile`
+- `make test`
+- `make fmt` / `make fmt-check`
+- `make lint` / `make lint-fix`
+- `make run` (starts the API in foreground)
+- `make start` (start API with auto-restart on code changes, use `BG=1` for background)
+- `make stop` (stop API via sbt-revolver)
+- `make restart` (restart API with auto-restart on code changes, use `BG=1` for background)
+- `make status` (check if API is running)
+- `make github-workflow-generate` / `make github-workflow-check`
+
+### Development with sbt-revolver
+
+For fast development turnaround, use sbt-revolver which automatically loads configuration from `.env` and `.jvmopts`:
+
+**Using Makefile (recommended):**
+
+```bash
+# Watch mode (default) - auto-restart on code changes with live logs
+make start    # Start with auto-restart enabled (Ctrl-C to stop)
+make restart  # Restart with auto-restart enabled
+make stop     # Stop the application  
+make status   # Check if running
+
+# Background mode - app runs detached (use BG=1)
+make start BG=1     # Start in background
+make restart BG=1   # Restart in background
+```
+
+**Using sbt directly:**
+
+```bash
+# First, ensure sbt server is running (run once per session)
+sbt
+
+# Then in another terminal, use --client flag:
+sbt --client "core/reStart"   # Start
+sbt --client "core/reStop"    # Stop
+sbt --client restart          # Restart (using alias)
+sbt --client "core/reStatus"  # Check status
+```
+
+**Configuration files:**
+
+- `.env` - Environment variables (SC_APP_ENV, SC_POSTGRES_PASSWORD, etc.)
+- `.jvmopts` - JVM options (memory, GC settings, etc.)
+
+Both files are automatically loaded when using `reStart`.
 
 - Set environment variables like described below:
 
@@ -23,7 +136,7 @@ Setup
 
 Build And Run
 
-- Download [SBT ](https://www.scala-sbt.org/download.html) to build the project
+- Download [SBT](https://www.scala-sbt.org/download.html) to build the project
 - `sbt run` to start the server on port 8080
 
 ```
@@ -140,9 +253,6 @@ Routes
   }
 ]
 ```
-
-
-
 
 - /GET `/v1/kevinBaconNumber/Max%20Schreck?maxPaths=2`
 

@@ -88,9 +88,9 @@ CREATE TABLE IF NOT EXISTS title_crew (
     FOREIGN KEY (tconst) REFERENCES title_basics(tconst)
 );
 
-CREATE index "title_basics_title_id_index" on public."title_basics"("tconst");
-CREATE index "title_principals_title_id_index" on public."title_principals"("tconst");
-CREATE index "title_principals_actor_id_index" on public."title_principals"("nconst");
+CREATE INDEX IF NOT EXISTS "title_basics_title_id_index" on public."title_basics"("tconst");
+CREATE INDEX IF NOT EXISTS "title_principals_title_id_index" on public."title_principals"("tconst");
+CREATE INDEX IF NOT EXISTS "title_principals_actor_id_index" on public."title_principals"("nconst");
 
 -- Speed up actor->titles traversal and joins.
 CREATE INDEX IF NOT EXISTS "title_principals_nconst_tconst_index" ON public."title_principals"("nconst", "tconst");

@@ -1,24 +1,26 @@
 import Dependencies.{ Libraries, _ }
+import sbt.IO
 
 ThisBuild / scalaVersion                        := "3.7.3"
 ThisBuild / version                             := "0.0.1"
 ThisBuild / evictionErrorLevel                  := Level.Warn
-ThisBuild / scalafixDependencies += Libraries.typelevelScalafix
+ThisBuild / scalafixDependencies                += Libraries.typelevelScalafix
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 Global / onChangedBuildSource                   := ReloadOnSourceChanges
 ThisBuild / semanticdbEnabled                   := true
 ThisBuild / semanticdbVersion                   := scalafixSemanticdb.revision
-ThisBuild / scalacOptions ~= (_.filterNot(Set("-Werror", "-Xfatal-warnings")))
-ThisBuild / scalacOptions ++= Seq("-Wunused:imports")
+ThisBuild / scalacOptions                       ~= (_.filterNot(Set("-Werror", "-Xfatal-warnings")))
+ThisBuild / scalacOptions                      ++= Seq("-Wunused:imports")
 
 resolvers += Resolver.sonatypeCentralSnapshots
 
 val scalafixCommonSettings = inConfig(Compile)(scalafixConfigSettings(Compile))
-lazy val root              = (project in file(".")).settings(name := "imdb-assignment").aggregate(core, tests)
+lazy val root              =
+  (project in file(".")).settings(name := "imdb-assignment").aggregate(core, tests).disablePlugins(RevolverPlugin)
 
 lazy val tests = (project in file("modules/tests")).settings(
-  name := "imdb-assignment-test-suite",
+  name           := "imdb-assignment-test-suite",
   scalacOptions ++= Seq("-deprecation", "-feature"),
   scalafixCommonSettings,
   libraryDependencies ++= Seq(
@@ -28,16 +30,29 @@ lazy val tests = (project in file("modules/tests")).settings(
     Libraries.scalacheckEffect,
     Libraries.munitCatsEffect
   )
-).dependsOn(core)
+).dependsOn(core).disablePlugins(RevolverPlugin)
 
 lazy val core = (project in file("modules/core")).enablePlugins(AshScriptPlugin).settings(
   name                 := "imdb-assignment-core",
   Docker / packageName := "imdb-assignment",
-  scalacOptions ++= Seq("-deprecation", "-feature"),
+  scalacOptions       ++= Seq("-deprecation", "-feature"),
+  Compile / mainClass  := Some("Main"),
   Compile / run / fork := true,
-  resolvers += Resolver.sonatypeCentralSnapshots,
+  resolvers            += Resolver.sonatypeCentralSnapshots,
   scalafixCommonSettings,
-  libraryDependencies ++= Seq(
+  javaOptions ++= {
+    val jvmOptsFile = baseDirectory.value / ".." / ".." / ".jvmopts"
+    if (jvmOptsFile.exists()) {
+      IO.readLines(jvmOptsFile)
+        .map(_.trim)
+        .filter(line => line.nonEmpty && !line.startsWith("#"))
+    } else Seq.empty
+  },
+  // Apply JVM options to both `run` and `reStart` tasks
+  reStart / javaOptions ++= javaOptions.value,
+  run / javaOptions     ++= javaOptions.value,
+  reStart / envVars      := sys.env.toMap,
+  libraryDependencies   ++= Seq(
     Libraries.cats,
     Libraries.catsEffect,
     Libraries.circeCore,
@@ -60,6 +75,7 @@ lazy val core = (project in file("modules/core")).enablePlugins(AshScriptPlugin)
   )
 )
 
-addCommandAlias("runLinter", "; scalafixAll --check")
+addCommandAlias("runLinter", "; scalafixAll --check;scalafmtCheckAll")
 addCommandAlias("fixLinter", "; scalafixAll;scalafmtAll")
 addCommandAlias("run", "; core/run")
+addCommandAlias("restart", "; core/reStart")

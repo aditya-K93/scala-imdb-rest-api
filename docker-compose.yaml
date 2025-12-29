@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: arm64v8/postgres
+    image: arm64v8/postgres:18.1-alpine
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -9,23 +9,52 @@ services:
       - "5432:5432"
     networks:
       - default
+    volumes:
+      # Postgres 18+ images expect a mount at /var/lib/postgresql (not /var/lib/postgresql/data)
+      # so they can manage major-version-specific subdirectories for upgrades.
+      - postgres-data:/var/lib/postgresql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
-    logging:
-      driver: none
 
   postgres-init:
-    image: arm64v8/postgres
+    build:
+      context: ./database-init
+      dockerfile: Dockerfile
+    profiles: ["init"]
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       - PGPASSWORD=postgres
-      - MINIMAL_DATASET=false
+      - MINIMAL_DATASET=${MINIMAL_DATASET:-false}
+      - IMDB_LOADER_MODE=init
     volumes:
       - ./database-init/schema.sql:/schema.sql
       - ./database-init/initialize-imdb.sh:/initialize-imdb.sh
+      - imdb-downloads:/imdb-data
     command: bash -c "sleep 10 && chmod u+x /initialize-imdb.sh && /initialize-imdb.sh"
+
+  postgres-update:
+    build:
+      context: ./database-init
+      dockerfile: Dockerfile
+    profiles: ["update"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PGPASSWORD=postgres
+      - MINIMAL_DATASET=${MINIMAL_DATASET:-false}
+      - IMDB_LOADER_MODE=update
+    volumes:
+      - ./database-init/schema.sql:/schema.sql
+      - ./database-init/initialize-imdb.sh:/initialize-imdb.sh
+      - imdb-downloads:/imdb-data
+    command: bash -c "sleep 2 && chmod u+x /initialize-imdb.sh && /initialize-imdb.sh"
+
+volumes:
+  postgres-data:
+  imdb-downloads:
