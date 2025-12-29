@@ -10,12 +10,12 @@ object types:
   case class AppConfig(postgreSQL: PostgreSQLConfig, httpServerConfig: HttpServerConfig)
 
   case class PostgreSQLConfig(
-    host: NonEmptyString,
-    port: Port,
-    user: NonEmptyString,
-    password: Secret[NonEmptyString],
-    database: NonEmptyString,
-    max: PosInt
+      host: NonEmptyString,
+      port: Port,
+      user: NonEmptyString,
+      password: Secret[NonEmptyString],
+      database: NonEmptyString,
+      max: PosInt
   )
 
   case class HttpServerConfig(host: Host, port: Port)

@@ -1,12 +1,13 @@
 package http
 
-import cats.Monad
 import io.circe.generic.auto.*
 import org.http4s.*
 import org.http4s.circe.CirceEntityEncoder.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.Router
 import services.Ratings
+
+import cats.Monad
 
 final case class MovieRatingRoutes[F[_]: Monad](rating: Ratings[F]) extends Http4sDsl[F]:
 

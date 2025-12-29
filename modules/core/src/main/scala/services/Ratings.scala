@@ -1,13 +1,15 @@
 package services
 
-import cats.*
-import cats.effect.{ Concurrent, Resource }
-import cats.syntax.all.*
 import domain.movie.Movie
 import domain.rating.*
 import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
+
+import cats.*
+import cats.syntax.all.*
+
+import cats.effect.{ Concurrent, Resource }
 
 trait Ratings[F[_]]:
   def findByGenre(genreName: String)(limit: Int = 250): F[List[Rating]]

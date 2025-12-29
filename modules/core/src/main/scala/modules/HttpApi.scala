@@ -1,13 +1,16 @@
 package modules
 
-import cats.effect.Async
-import cats.syntax.all.*
+import scala.concurrent.duration.*
+
 import http.{ KevinBaconRoutes, MovieDetailRoutes, MovieRatingRoutes, version }
 import org.http4s.*
 import org.http4s.implicits.*
 import org.http4s.server.Router
 import org.http4s.server.middleware.*
-import scala.concurrent.duration.*
+
+import cats.syntax.all.*
+
+import cats.effect.Async
 
 object HttpApi:
   def make[F[_]: Async](services: Services[F]): HttpApi[F] = new HttpApi[F](services) {}

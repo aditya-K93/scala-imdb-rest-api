@@ -1,10 +1,11 @@
-import cats.effect.*
-import cats.effect.std.Supervisor
 import config.Config
 import modules.{ HttpApi, Services }
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import resources.*
+
+import cats.effect.*
+import cats.effect.std.Supervisor
 
 object Main extends IOApp.Simple:
 

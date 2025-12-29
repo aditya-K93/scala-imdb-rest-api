@@ -1,8 +1,5 @@
 package resources
 
-import cats.effect.std.Console
-import cats.effect.{ Resource, Temporal }
-import cats.syntax.all.*
 import config.types.*
 import fs2.io.net.Network
 import natchez.Trace.Implicits.noop
@@ -10,6 +7,11 @@ import org.typelevel.log4cats.Logger
 import skunk.*
 import skunk.codec.text.*
 import skunk.implicits.*
+
+import cats.syntax.all.*
+
+import cats.effect.std.Console
+import cats.effect.{ Resource, Temporal }
 
 sealed abstract class AppResources[F[_]](val postgres: Resource[F, Session[F]])
 

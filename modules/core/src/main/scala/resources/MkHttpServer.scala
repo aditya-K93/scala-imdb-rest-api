@@ -1,12 +1,13 @@
 package resources
 
-import cats.effect.kernel.{ Async, Resource }
 import config.types.HttpServerConfig
 import org.http4s.HttpApp
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Server
 import org.http4s.server.defaults.Banner
 import org.typelevel.log4cats.Logger
+
+import cats.effect.kernel.{ Async, Resource }
 
 trait MkHttpServer[F[_]]:
   def newEmber(cfg: HttpServerConfig, httpApp: HttpApp[F]): Resource[F, Server]

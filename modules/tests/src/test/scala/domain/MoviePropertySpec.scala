@@ -1,12 +1,13 @@
 package domain
 
-import cats.effect.IO
 import domain.movie.Movie
 import domain.rating.Rating
 import munit.{ CatsEffectSuite, ScalaCheckSuite }
 import org.scalacheck.Prop.*
 import org.scalacheck.effect.PropF
 import org.scalacheck.{ Arbitrary, Gen }
+
+import cats.effect.IO
 
 /**
  * Property-based test suite for Movie domain model.
@@ -41,8 +42,8 @@ class MoviePropertySpec extends CatsEffectSuite with ScalaCheckSuite:
     for
       released <- genYear
       ended    <- released match
-                    case Some(r) => Gen.option(Gen.choose(r, 2025)) // End year >= release year
-                    case None    => genYear
+        case Some(r) => Gen.option(Gen.choose(r, 2025)) // End year >= release year
+        case None    => genYear
     yield (released, ended)
 
   val genRuntime: Gen[Option[Int]] = Gen.option(Gen.choose(1, 600))
@@ -52,15 +53,15 @@ class MoviePropertySpec extends CatsEffectSuite with ScalaCheckSuite:
 
   implicit val arbMovie: Arbitrary[Movie] = Arbitrary {
     for
-      id                       <- genMovieId
-      titleType                <- genTitleType
-      primaryTitle             <- genTitle
-      originalTitle            <- genTitle
-      adult                    <- genBoolean
-      years                    <- genYearPair
+      id            <- genMovieId
+      titleType     <- genTitleType
+      primaryTitle  <- genTitle
+      originalTitle <- genTitle
+      adult         <- genBoolean
+      years         <- genYearPair
       (yearReleased, yearEnded) = years
-      runtime                  <- genRuntime
-      genres                   <- genGenres
+      runtime <- genRuntime
+      genres  <- genGenres
     yield Movie(
       movieId = id,
       titleType = titleType,
@@ -158,7 +159,7 @@ class MoviePropertySpec extends CatsEffectSuite with ScalaCheckSuite:
       val process = (m: Movie) => IO.pure(m.movieId.length)
 
       for
-        results     <- (process(m1), process(m2)).parTupled
+        results <- (process(m1), process(m2)).parTupled
         (len1, len2) = results
       yield
         // Concurrent execution produces same results as sequential

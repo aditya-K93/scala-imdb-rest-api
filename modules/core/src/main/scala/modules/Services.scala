@@ -1,8 +1,9 @@
 package modules
 
-import cats.effect.*
 import services.*
 import skunk.Session
+
+import cats.effect.*
 
 object Services:
 
@@ -14,8 +15,8 @@ object Services:
   ) {}
 
 sealed abstract class Services[F[_]] private (
-  val movies: Movies[F],
-  val crew: CastAndCrew[F],
-  val ratings: Ratings[F],
-  val kevinBacon: KevinBaconDetails[F]
+    val movies: Movies[F],
+    val crew: CastAndCrew[F],
+    val ratings: Ratings[F],
+    val kevinBacon: KevinBaconDetails[F]
 )

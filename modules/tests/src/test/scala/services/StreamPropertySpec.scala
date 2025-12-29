@@ -1,13 +1,15 @@
 package services
 
-import cats.effect.{ IO, Ref }
-import cats.syntax.all.*
 import domain.movie.Movie
 import domain.rating.Rating
 import fs2.Stream
 import munit.{ CatsEffectSuite, ScalaCheckSuite }
 import org.scalacheck.effect.PropF
 import org.scalacheck.{ Arbitrary, Gen }
+
+import cats.syntax.all.*
+
+import cats.effect.{ IO, Ref }
 
 /**
  * Property-based tests for streaming operations.

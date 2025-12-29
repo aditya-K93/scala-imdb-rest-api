@@ -1,12 +1,14 @@
 package services
 
-import cats.*
-import cats.effect.{ Concurrent, Resource }
-import cats.syntax.all.*
 import domain.castCrew.*
 import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
+
+import cats.*
+import cats.syntax.all.*
+
+import cats.effect.{ Concurrent, Resource }
 
 trait CastAndCrew[F[_]]:
   def findByTitleId(titleId: String): F[List[Crew]]

@@ -1,6 +1,5 @@
 package config
 
-import cats.effect.Async
 import ciris.*
 import ciris.refined.*
 import com.comcast.ip4s.*
@@ -10,6 +9,8 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.cats.*
 import eu.timepit.refined.refineV
 import eu.timepit.refined.types.string.NonEmptyString
+
+import cats.effect.Async
 
 object Config:
 

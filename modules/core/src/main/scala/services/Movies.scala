@@ -1,12 +1,14 @@
 package services
 
-import cats.*
-import cats.effect.{ Concurrent, Resource }
-import cats.syntax.all.*
 import domain.movie.*
 import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
+
+import cats.*
+import cats.syntax.all.*
+
+import cats.effect.{ Concurrent, Resource }
 
 trait Movies[F[_]]:
   def findByTitleId(titleId: String): F[Option[Movie]]
@@ -29,7 +31,8 @@ private object MovieSQL:
     (varchar(10) *: varchar(20).opt *: varchar(500).opt *: varchar(500).opt *: bool.opt *: int4.opt *: int4.opt *:
       int4.opt *: varchar(200).opt).to[Movie]
 
-  val SelectByTitle: Query[String ~ String, Movie] = sql"""
+  val SelectByTitle: Query[String ~ String, Movie] =
+    sql"""
           SELECT title_basics.tconst,titletype, primarytitle, originaltitle, isadult, startyear, endyear, runtimeminutes, genres
           FROM   PUBLIC.title_basics
           WHERE  (
