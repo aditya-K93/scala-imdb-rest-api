@@ -1,5 +1,4 @@
 package http
 
-object version {
+object version:
   val v1 = "/v1"
-}

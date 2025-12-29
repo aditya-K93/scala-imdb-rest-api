@@ -1,8 +1,6 @@
 package domain
 
-object baconNumber {
+object baconNumber:
 
 //  describe baconNumber
   case class BaconNumber(baconNumber: Int)
-
-}
