@@ -1,6 +1,6 @@
 package services
 
-import cats.effect.IO
+import cats.effect.{ IO, Ref }
 import cats.syntax.all.*
 import domain.movie.Movie
 import domain.rating.Rating
@@ -124,11 +124,11 @@ class StreamPropertySpec extends CatsEffectSuite with ScalaCheckSuite:
 
   test("Stream bracket ensures resource cleanup") {
     PropF.forAllF { (movie: Movie) =>
-      var released = false
+      Ref[IO].of(false).flatMap { released =>
+        val stream = Stream.bracket(IO.pure(movie))(_ => released.set(true))
 
-      val stream = Stream.bracket(IO.pure(movie))(_ => IO { released = true })
-
-      stream.compile.drain.map(_ => assertEquals(released, true))
+        stream.compile.drain >> released.get.map(wasReleased => assertEquals(wasReleased, true))
+      }
     }
   }
 
