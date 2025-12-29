@@ -1,0 +1,6 @@
+-Xms512M
+-Xmx4G
+-XX:MaxMetaspaceSize=1G
+-XX:+HeapDumpOnOutOfMemoryError
+-Xss4m
+-XX:+UseG1GC

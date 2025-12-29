@@ -144,10 +144,10 @@ Routes
 - /GET moviesByGenre limit `/v1/ratings/drama?limit=1`
 
 
-- /GET `v1/kevinBaconNumber/Brad%20Pitt`
+- /GET `/v1/kevinBaconNumber/Max%20Schreck`
 
 ```json
 {
-  "baconNumber": 1
+  "baconNumber": 4
 }
 ```

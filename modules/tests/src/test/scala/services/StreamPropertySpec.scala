@@ -6,7 +6,6 @@ import domain.movie.Movie
 import domain.rating.Rating
 import fs2.Stream
 import munit.{ CatsEffectSuite, ScalaCheckSuite }
-import org.scalacheck.Prop.*
 import org.scalacheck.effect.PropF
 import org.scalacheck.{ Arbitrary, Gen }
 
@@ -111,10 +110,11 @@ class StreamPropertySpec extends CatsEffectSuite with ScalaCheckSuite:
   }
 
   test("Stream take respects element limit") {
-    val genMoviesAndLimit: Gen[(List[Movie], Int)] = for
-      movies <- Gen.listOf(arbMovie.arbitrary)
-      n      <- if movies.isEmpty then Gen.const(0) else Gen.choose(0, movies.length)
-    yield (movies, n)
+    val genMoviesAndLimit: Gen[(List[Movie], Int)] =
+      for
+        movies <- Gen.listOf(arbMovie.arbitrary)
+        n      <- if movies.isEmpty then Gen.const(0) else Gen.choose(0, movies.length)
+      yield (movies, n)
 
     PropF.forAllF(genMoviesAndLimit) { case (movies, n) =>
       val stream = Stream.emits[IO, Movie](movies)

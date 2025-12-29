@@ -3,12 +3,14 @@ import Dependencies.{ Libraries, _ }
 ThisBuild / scalaVersion                        := "3.7.3"
 ThisBuild / version                             := "0.0.1"
 ThisBuild / evictionErrorLevel                  := Level.Warn
-ThisBuild / scalafixDependencies += Libraries.organizeImports
+ThisBuild / scalafixDependencies += Libraries.typelevelScalafix
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 Global / onChangedBuildSource                   := ReloadOnSourceChanges
-// Disable Werror from tpolecat plugin for Scala 3 compatibility
+ThisBuild / semanticdbEnabled                   := true
+ThisBuild / semanticdbVersion                   := scalafixSemanticdb.revision
 ThisBuild / scalacOptions ~= (_.filterNot(Set("-Werror", "-Xfatal-warnings")))
+ThisBuild / scalacOptions ++= Seq("-Wunused:imports")
 
 resolvers += Resolver.sonatypeCentralSnapshots
 
@@ -58,5 +60,6 @@ lazy val core = (project in file("modules/core")).enablePlugins(AshScriptPlugin)
   )
 )
 
-addCommandAlias("runLinter", ";scalafixAll --rules OrganizeImports")
+addCommandAlias("runLinter", "; scalafixAll --check")
+addCommandAlias("fixLinter", "; scalafixAll;scalafmtAll")
 addCommandAlias("run", "; core/run")

@@ -1,7 +1,7 @@
 package resources
 
 import cats.effect.std.Console
-import cats.effect.{ Concurrent, Resource, Temporal }
+import cats.effect.{ Resource, Temporal }
 import cats.syntax.all.*
 import config.types.*
 import fs2.io.net.Network
