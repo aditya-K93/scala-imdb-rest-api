@@ -104,7 +104,7 @@ Routes
 }
 ```
 
-- /GET moviesByGenre top250 `/v1/ratings/drama`
+- /GET moviesByGenre top250 `/v1/ratings/drama` or (`/v1/ratings/drama?limit=2`)
 
 ```json
 [
@@ -141,13 +141,58 @@ Routes
 ]
 ```
 
-- /GET moviesByGenre limit `/v1/ratings/drama?limit=1`
 
 
-- /GET `/v1/kevinBaconNumber/Max%20Schreck`
+
+- /GET `/v1/kevinBaconNumber/Max%20Schreck?maxPaths=2`
 
 ```json
 {
-  "baconNumber": 4
+  "baconNumber": 4,
+  "paths": [
+    {
+      "baconNumber": 4,
+      "path": [
+        {
+          "actorName": "Kevin Bacon",
+          "movieTitle": "Telling Lies in America"
+        },
+        {
+          "actorName": "Maximilian Schell",
+          "movieTitle": "Die sechste Frau"
+        },
+        {
+          "actorName": "Robert Meyn",
+          "movieTitle": "Bacchus"
+        },
+        {
+          "actorName": "Werner Krauss",
+          "movieTitle": "Der Roman der Christine von Herre"
+        }
+      ]
+    },
+    {
+      "baconNumber": 4,
+      "path": [
+        {
+          "actorName": "Kevin Bacon",
+          "movieTitle": "The Gift"
+        },
+        {
+          "actorName": "Glenn Ford",
+          "movieTitle": "The White Tower"
+        },
+        {
+          "actorName": "Oskar Homolka",
+          "movieTitle": "Between Night and Dawn"
+        },
+        {
+          "actorName": "Aud Egede-Nissen",
+          "movieTitle": "The Street"
+        }
+      ]
+    }
+  ]
 }
+
 ```
