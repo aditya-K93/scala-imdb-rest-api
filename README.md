@@ -19,7 +19,7 @@ scala 3 with Tagless-Final encoding.
 
 ### Getting Started
 
-- `make docker-up` (starts Postgres)
+- `make db-init` (first-time Postgres + IMDb data loader)
 - `make run` (starts the API server 8080 on localhost)
 - `curl -s "http://127.0.0.1:8080/v1/kevinBaconNumber/Jon%20Hamm?maxPaths=2"` (to test the API)
 
