@@ -77,7 +77,7 @@ class BaconNumberSearchSpec extends CatsEffectSuite:
       targetActor = "A",
       maxDepth = 6,
       getNeighborsForNode = _ => IO.pure(Set.empty)
-    ).map(result => assertEquals(result, Some(BfsPathResult(Map.empty, Map.empty, Set("A")))))
+    ).map(result => assertEquals(result, Some(KevinBaconDetails.BfsPathResult(Map.empty, Map.empty, Set("A")))))
   }
 
   test("findPathsSequential finds paths and meeting points") {

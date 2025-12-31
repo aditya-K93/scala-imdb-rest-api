@@ -22,6 +22,7 @@ lazy val root              =
 lazy val tests = (project in file("modules/tests")).settings(
   name           := "imdb-assignment-test-suite",
   scalacOptions ++= Seq("-deprecation", "-feature"),
+  Test / fork    := true,
   scalafixCommonSettings,
   libraryDependencies ++= Seq(
     Libraries.munit,
