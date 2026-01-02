@@ -24,6 +24,14 @@ lazy val tests = (project in file("modules/tests")).settings(
   name           := "imdb-assignment-test-suite",
   scalacOptions ++= Seq("-deprecation", "-feature"),
   Test / fork    := true,
+  Test / javaOptions ++= {
+    val jvmOptsFile = baseDirectory.value / ".." / ".." / ".jvmopts"
+    if (jvmOptsFile.exists()) {
+      IO.readLines(jvmOptsFile)
+        .map(_.trim)
+        .filter(line => line.nonEmpty && !line.startsWith("#"))
+    } else Seq.empty
+  },
   scalafixCommonSettings,
   libraryDependencies ++= Seq(
     Libraries.munit,
@@ -42,7 +50,8 @@ lazy val core = (project in file("modules/core")).enablePlugins(AshScriptPlugin)
   Compile / run / fork := true,
   resolvers            += Resolver.sonatypeCentralSnapshots,
   scalafixCommonSettings,
-  javaOptions ++= {
+  // Apply JVM options to both `run` and `reStart` tasks from .jvmopts
+  run / javaOptions ++= {
     val jvmOptsFile = baseDirectory.value / ".." / ".." / ".jvmopts"
     if (jvmOptsFile.exists()) {
       IO.readLines(jvmOptsFile)
@@ -50,9 +59,7 @@ lazy val core = (project in file("modules/core")).enablePlugins(AshScriptPlugin)
         .filter(line => line.nonEmpty && !line.startsWith("#"))
     } else Seq.empty
   },
-  // Apply JVM options to both `run` and `reStart` tasks
-  reStart / javaOptions ++= javaOptions.value,
-  run / javaOptions     ++= javaOptions.value,
+  reStart / javaOptions := (run / javaOptions).value,
   reStart / envVars      := sys.env.toMap,
   libraryDependencies   ++= Seq(
     Libraries.cats,
