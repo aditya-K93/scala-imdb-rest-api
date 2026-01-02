@@ -3,6 +3,7 @@ import sbt.IO
 
 ThisBuild / scalaVersion                        := "3.7.3"
 ThisBuild / version                             := "0.0.1"
+ThisBuild / licenses                            += ("MIT License" -> url("https://opensource.org/licenses/MIT"))
 ThisBuild / evictionErrorLevel                  := Level.Warn
 ThisBuild / scalafixDependencies                += Libraries.typelevelScalafix
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
