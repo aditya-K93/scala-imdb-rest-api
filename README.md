@@ -4,8 +4,7 @@
 - [x] Search top-rated movies for a genre
 - [x] Kevin Bacon Number
 
-Purely Function Scala app to search movies by title, find top rated movies for a genre and get Bacon Number for an
-actor/actress. Uses [Typelevel](https://typelevel.org/) scala fp ecosystem cats, cats-effect, http4s, circe, skunk and
+Purely Function Scala app to search movies by title, find top rated movies for a genre and get Bacon Number for a celebrity. Uses [Typelevel](https://typelevel.org/) scala fp ecosystem cats, cats-effect, http4s, circe, skunk and
 scala 3 with Tagless-Final encoding.
 
 ## Setup
@@ -258,47 +257,39 @@ Routes
 
 ```json
 {
-  "baconNumber": 4,
+  "baconNumber": 3,
   "paths": [
     {
-      "baconNumber": 4,
+      "baconNumber": 3,
       "path": [
         {
           "actorName": "Kevin Bacon",
-          "movieTitle": "Telling Lies in America"
+          "movieTitle": "The 63rd Annual Golden Globe Awards"
         },
         {
-          "actorName": "Maximilian Schell",
-          "movieTitle": "Die sechste Frau"
+          "actorName": "Candice Bergen",
+          "movieTitle": "The 50th Annual Directors Guild of America Awards"
         },
         {
-          "actorName": "Robert Meyn",
-          "movieTitle": "Bacchus"
-        },
-        {
-          "actorName": "Werner Krauss",
-          "movieTitle": "Der Roman der Christine von Herre"
+          "actorName": "David Carradine",
+          "movieTitle": "Nosferatu: The First Vampire"
         }
       ]
     },
     {
-      "baconNumber": 4,
+      "baconNumber": 3,
       "path": [
         {
           "actorName": "Kevin Bacon",
-          "movieTitle": "The Gift"
+          "movieTitle": "The Air Up There"
         },
         {
-          "actorName": "Glenn Ford",
-          "movieTitle": "The White Tower"
+          "actorName": "Paul Michael Glaser",
+          "movieTitle": "Jealousy"
         },
         {
-          "actorName": "Oskar Homolka",
-          "movieTitle": "Between Night and Dawn"
-        },
-        {
-          "actorName": "Aud Egede-Nissen",
-          "movieTitle": "The Street"
+          "actorName": "David Carradine",
+          "movieTitle": "Nosferatu: The First Vampire"
         }
       ]
     }
