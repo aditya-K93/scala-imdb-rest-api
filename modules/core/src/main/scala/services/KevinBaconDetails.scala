@@ -13,12 +13,12 @@ import cats.effect.syntax.all.*
 import cats.effect.{ Concurrent, Resource }
 
 /**
- * Algebra for computing actor separation degrees and connection paths in the IMDb graph.
+ * Algebra for computing person separation degrees and connection paths in the IMDb graph.
  *
  * This service models the "Six Degrees of Kevin Bacon" problem as a graph traversal where:
- * - Nodes are actors (identified by IMDb nconst)
- * - Edges exist between actors who appeared in the same film
- * - Path weight is the number of films (hops) between actors
+ * - Nodes are people in IMDb (identified by nconst: actors, directors, writers, etc.)
+ * - Edges exist between people who worked on the same title (in any capacity)
+ * - Path weight is the number of titles (hops) between people
  *
  * Uses tagless final encoding to abstract over effect type F[_], enabling:
  * - Testability via different interpreters
@@ -63,17 +63,18 @@ trait KevinBaconDetails[F[_]]:
 object KevinBaconDetails:
 
   /**
-   * Type alias for IMDb actor identifier (nconst format: nm0000000).
+   * Type alias for IMDb person identifier (nconst format: nm0000000).
    *
    * Encapsulated as implementation detail of the service.
    * Public API uses String to avoid coupling callers to internal representation.
+   * Note: Despite the name "ActorId", this includes all people (directors, writers, etc.)
    */
   type ActorId = String
 
-  /** Type alias for actor primary name as stored in IMDb. */
+  /** Type alias for person primary name as stored in IMDb. */
   type ActorName = String
 
-  /** Type alias for film primary title. */
+  /** Type alias for title primary name (movies, TV shows, etc.). */
   type MovieTitle = String
 
   /** Type alias for graph distance (number of edges in shortest path). */
@@ -90,7 +91,7 @@ object KevinBaconDetails:
    * @param maxDepth maximum BFS depth before abandoning search
    *                 Acts as safety valve for disconnected graph components
    *                 or pathological cases (typically 6 for small-world networks)
-   * @param coStarBatchSize number of actors per parallel database query batch
+   * @param coStarBatchSize number of people per parallel database query batch
    *                        Tuned to balance query overhead vs. result set size
    * @param coStarParallelism maximum concurrent database queries via semaphore
    *                          Limited by connection pool size and DB capacity
@@ -394,7 +395,7 @@ object KevinBaconDetails:
    * Default configuration tuned for IMDb dataset characteristics.
    *
    * These values are based on:
-   * - Small-world network property: most actors within 6 degrees
+   * - Small-world network property: most people within 6 degrees
    * - Database query performance: batch size balances overhead vs throughput
    * - Connection pool constraints: parallelism limited to avoid saturation
    * - Coordination overhead: sequential better for small frontiers
@@ -416,11 +417,11 @@ object KevinBaconDetails:
    * 4. Terminates when frontiers meet or max depth exceeded
    *
    * Complexity: O(b^(d/2)) vs O(b^d) for unidirectional BFS where:
-   * - b is branching factor (avg co-stars per actor ~100)
+   * - b is branching factor (avg collaborators per person ~100)
    * - d is shortest path distance (typically 2-4 for IMDb)
    *
    * Why bidirectional:
-   * - Actor graph has high branching factor (popular actors have 100+ co-stars)
+   * - IMDb graph has high branching factor (popular people have 100+ collaborators)
    * - For d=4, saves 100^2 = 10,000x compared to unidirectional
    * - Small-world property makes meeting highly likely in middle
    *
@@ -740,9 +741,10 @@ object KevinBaconDetails:
         case None                                 => List.empty       // Unreachable (shouldn't happen)
         case Some(parentSet) if parentSet.isEmpty => List(List(node)) // Root node case
         case Some(parentSet)                      =>
-          parentSet.toList.take(limit).flatMap { parent =>
-            reconstructAllPaths(parent, parents, root, limit).map(path => node :: path)
-          }.take(limit)
+          // Use LazyList to avoid computing unnecessary paths when limit is small
+          parentSet.to(LazyList).flatMap { parent =>
+            LazyList.from(reconstructAllPaths(parent, parents, root, limit)).map(path => node :: path)
+          }.take(limit).toList
 
   /**
    * Factory method for creating KevinBaconDetails instance.
@@ -1043,7 +1045,7 @@ private final class KevinBaconDetailsLive[F[_]: Concurrent](
               targetActorId,
               limit
             )
-            // Convert actor IDs to named steps with database lookups
+            // Convert actor IDs to named steps with optimized database lookups
             actorPaths.traverse { actorPath =>
               convertActorPathToSteps(actorPath, actorNamePs, moviesPs).map(steps =>
                 BaconPath(depth, steps)
@@ -1091,20 +1093,26 @@ private final class KevinBaconDetailsLive[F[_]: Concurrent](
       targetActor: ActorId,
       maxPaths: Int
   ): List[List[ActorId]] =
-    meetings.toList.flatMap { meetingNode =>
+    meetings.to(LazyList).flatMap { meetingNode =>
       val pathsFromStart = reconstructAllPaths(meetingNode, parentsA, startActor, maxPaths)
       val pathsToEnd     = reconstructAllPaths(meetingNode, parentsB, targetActor, maxPaths)
-      for
-        pathA <- pathsFromStart.take(maxPaths)
-        pathB <- pathsToEnd.take(maxPaths)
-      yield pathA.reverse ++ pathB.tail
-    }.distinct.take(maxPaths)
+      // Use LazyList and limit early to avoid computing unnecessary cartesian products
+      LazyList.from(
+        for
+          pathA <- pathsFromStart
+          pathB <- pathsToEnd
+        yield pathA.reverse ++ pathB.tail
+      )
+    }.distinctBy(_.mkString).take(maxPaths).toList
 
   /**
    * Converts path of actor IDs to PathSteps with human-readable names and movies.
    *
+   * OPTIMIZED: Batches all actor name lookups into a single query, then processes edges.
+   * This reduces N sequential database queries to 1 batch query + N movie queries.
+   *
    * For each edge (pair of adjacent actors):
-   * 1. Lookup first actor's name
+   * 1. Lookup first actor's name (from pre-fetched map)
    * 2. Lookup movie they appeared in together
    * 3. Create PathStep(actorName, movie)
    *
@@ -1113,11 +1121,6 @@ private final class KevinBaconDetailsLive[F[_]: Concurrent](
    * - Each pair represents one "step" in the path
    * - Step shows: actor A appeared in movie X
    *
-   * Why traverse:
-   * - Each pair requires two database queries (name, movie)
-   * - traverse sequences effects: F[name] + F[movie] => F[PathStep]
-   * - Results in single F[List[PathStep]]
-   *
    * @return List of PathSteps with names and movie titles
    */
   private def convertActorPathToSteps(
@@ -1125,13 +1128,17 @@ private final class KevinBaconDetailsLive[F[_]: Concurrent](
       actorNamePs: PreparedQuery[F, ActorId, ActorName],
       moviesPs: PreparedQuery[F, ActorId *: ActorId *: EmptyTuple, MovieTitle]
   ): F[List[PathStep]] =
-    actorPath.sliding(2).toList.traverse {
-      case List(actor1, actor2) =>
-        for
-          actor1Name <- fetchActorName(actorNamePs, actor1)
-          movie      <- fetchMovie(moviesPs, actor1, actor2)
-        yield PathStep(actor1Name, movie)
-      case _ => Monad[F].pure(PathStep("Unknown", "Unknown Movie")) // Shouldn't happen
+    // Batch fetch all actor names first
+    val uniqueActors = actorPath.take(actorPath.length - 1).toSet // Only need actors that start edges
+    uniqueActors.toList.traverse(id => actorNamePs.option(id).map(name => id -> name.getOrElse("Unknown"))).flatMap {
+      namesList =>
+        val nameMap = namesList.toMap
+        actorPath.sliding(2).toList.traverse {
+          case List(actor1, actor2) =>
+            val actor1Name = nameMap.getOrElse(actor1, "Unknown")
+            fetchMovie(moviesPs, actor1, actor2).map(movie => PathStep(actor1Name, movie))
+          case _ => Monad[F].pure(PathStep("Unknown", "Unknown Movie")) // Shouldn't happen
+        }
     }
 
   /** Database lookup with fallback for robustness. */
@@ -1207,28 +1214,43 @@ private final class KevinBaconDetailsLive[F[_]: Concurrent](
     """.query(varchar(110))
 
     /**
-     * Bulk co-star retrieval for entire frontier in single query.
+     * Batch lookup of actor names by IMDb identifiers.
      *
-     * Input format: Comma-separated actor IDs as single text parameter
+     * Takes comma-separated actor IDs and returns all names in one query.
+     * More efficient than N individual queries during path reconstruction.
+     */
+    val getActorNamesByIdsBatchSql: Query[String, (ActorId, ActorName)] = sql"""
+      WITH input AS (
+        SELECT unnest(string_to_array($text, ',')) AS nconst
+      )
+      SELECT nb.nconst, nb.primaryName
+      FROM input i
+      JOIN name_basics nb ON nb.nconst = i.nconst;
+    """.query(varchar(10) *: varchar(110))
+
+    /**
+     * Bulk collaborator retrieval for entire frontier in single query.
+     *
+     * Input format: Comma-separated person IDs as single text parameter
      * Example: "nm0000102,nm0000158,nm0000354"
      *
      * Query strategy:
      * 1. CTE 'input': UNNEST comma-separated string into rows
-     * 2. JOIN tp1: Get all movies for input actors
-     * 3. JOIN tp2: Get all actors in those movies
-     * 4. LEFT JOIN i2: Exclude input actors from results (self-loops)
-     * 5. Filter: Only actor/actress categories (excludes directors, writers)
-     * 6. DISTINCT: Multiple movies may connect same pair
+     * 2. JOIN tp1: Get all titles for input people
+     * 3. JOIN tp2: Get all people in those titles
+     * 4. LEFT JOIN i2: Exclude input people from results (self-loops)
+     * 5. DISTINCT: Multiple titles may connect same pair
      *
      * Why LEFT JOIN exclusion:
-     * - WHERE i2.nconst IS NULL filters out input actors
+     * - WHERE i2.nconst IS NULL filters out input people
      * - More efficient than NOT IN or EXISTS
-     * - Leverages partial index on category columns
      *
      * Performance:
-     * - Uses title_principals_actor_actress_nconst_tconst_idx (partial index)
+     * - Uses title_principals_nconst_tconst_index (covers all categories)
      * - Single query vs N individual queries (massive speedup)
      * - Critical for large frontier performance
+     *
+     * Note: Includes ALL collaborations (actors, directors, writers, producers, etc.)
      *
      * Used by: createBulkNeighborsFetcher for distance-only BFS
      */
@@ -1241,32 +1263,30 @@ private final class KevinBaconDetailsLive[F[_]: Concurrent](
       JOIN title_principals tp1 ON tp1.nconst = i.nconst
       JOIN title_principals tp2 ON tp1.tconst = tp2.tconst
       LEFT JOIN input i2 ON i2.nconst = tp2.nconst
-      WHERE i2.nconst IS NULL
-        AND tp1.category IN ('actor', 'actress')
-        AND tp2.category IN ('actor', 'actress');
+      WHERE i2.nconst IS NULL;
     """.query(varchar(10))
 
     /**
-     * Co-star retrieval for single actor (path tracking variant).
+     * Collaborator retrieval for single person (path tracking variant).
      *
      * Simpler than bulk version:
-     * - Takes single actor ID parameter
+     * - Takes single person ID parameter
      * - No UNNEST or CTE needed
-     * - Simple self-join on tconst (movie ID)
+     * - Simple self-join on tconst (title ID)
      *
      * Filter logic:
      * - tp2.nconst != tp1.nconst: Exclude self
-     * - category IN ('actor', 'actress'): Only acting roles
-     * - DISTINCT: Multiple movies may connect actors
+     * - DISTINCT: Multiple titles may connect people
      *
      * Why separate query:
      * - Used by path tracking which needs per-node parent attribution
-     * - Sequential execution (one actor at a time)
-     * - Simpler query plan for single-actor case
+     * - Sequential execution (one person at a time)
+     * - Simpler query plan for single-person case
      *
      * Index usage:
-     * - title_principals_actor_actress_nconst_tconst_idx for tp1
-     * - title_principals_nconst_tconst_index for tp2
+     * - title_principals_nconst_tconst_index for both tp1 and tp2
+     *
+     * Note: Includes ALL collaborations (actors, directors, writers, producers, etc.)
      *
      * Used by: expandWithParentsSequential in path reconstruction
      */
@@ -1275,31 +1295,27 @@ private final class KevinBaconDetailsLive[F[_]: Concurrent](
       FROM title_principals tp1
       JOIN title_principals tp2 ON tp1.tconst = tp2.tconst
       WHERE tp1.nconst = ${varchar(10)}
-        AND tp2.nconst != tp1.nconst
-        AND tp1.category IN ('actor', 'actress')
-        AND tp2.category IN ('actor', 'actress');
+        AND tp2.nconst != tp1.nconst;
     """.query(varchar(10))
 
     /** Helper codec for actor ID tuple parameters. */
     private val actorCodec: Encoder[ActorId] = varchar(10)
 
     /**
-     * Finds single movie where two actors worked together.
+     * Finds single title where two people collaborated.
      *
      * Used for path edge labeling during reconstruction.
-     * Returns first movie found (arbitrary choice when multiple exist).
+     * Returns first title found (arbitrary choice when multiple exist).
      *
      * Join strategy:
-     * 1. tp1/tp2: Both actors must appear in same movie (tconst)
-     * 2. tb: Lookup movie title
+     * 1. tp1/tp2: Both people must appear in same title (tconst)
+     * 2. tb: Lookup title name
      * 3. DISTINCT: Redundant but defensive (shouldn't have duplicates)
      *
-     * Filters:
-     * - Both actors must have actor/actress category
-     * - Excludes other roles (director, writer appearing in their own film)
+     * Note: Includes ALL types of collaboration (acting, directing, writing, producing, etc.)
      *
      * LIMIT 1:
-     * - We only need one movie to label the edge
+     * - We only need one title to label the edge
      * - Saves bandwidth and processing
      * - Choice is deterministic per database state
      *
@@ -1312,20 +1328,20 @@ private final class KevinBaconDetailsLive[F[_]: Concurrent](
       JOIN title_basics tb ON tp1.tconst = tb.tconst
       WHERE tp1.nconst = $actorCodec
         AND tp2.nconst = $actorCodec
-        AND tp1.category IN ('actor', 'actress')
-        AND tp2.category IN ('actor', 'actress')
       LIMIT 1;
     """.query(varchar(500))
 
     /**
-     * Finds multiple movies where two actors worked together.
+     * Finds multiple titles where two people collaborated.
      *
-     * Variant of single movie query that returns up to 10 movies.
+     * Variant of single title query that returns up to 10 titles.
      *
      * Why multiple:
-     * - For Bacon number 1, we can show different connection movies
-     * - Provides variety when actors have worked together multiple times
-     * - Example: Kevin Bacon + Tom Hanks in "Apollo 13" and others
+     * - For Bacon number 1, we can show different connection titles
+     * - Provides variety when people have worked together multiple times
+     * - Example: Kevin Bacon + Ron Howard in "Apollo 13" (acting/directing)
+     *
+     * Note: Includes ALL types of collaboration (acting, directing, writing, producing, etc.)
      *
      * LIMIT 10:
      * - Reasonable upper bound for variety
@@ -1341,7 +1357,5 @@ private final class KevinBaconDetailsLive[F[_]: Concurrent](
       JOIN title_basics tb ON tp1.tconst = tb.tconst
       WHERE tp1.nconst = $actorCodec
         AND tp2.nconst = $actorCodec
-        AND tp1.category IN ('actor', 'actress')
-        AND tp2.category IN ('actor', 'actress')
       LIMIT 10;
     """.query(varchar(500))
